@@ -15,7 +15,7 @@ jobs:
 
       - name: Build Docker Image
         # We tell GitHub to look inside project-1/code for the Dockerfile
-        run: docker build -t portfolio-app ./project-1/code
+        run: docker build -t portfolio-app ./code
 
       - name: Save Private Key
         run: |
