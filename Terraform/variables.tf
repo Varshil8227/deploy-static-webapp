@@ -1,3 +1,18 @@
-variable "aws_region" { default = "us-east-1" }
-variable "instance_type" { default = "t2.micro" }
-variable "public_key_path" { default = "~/.ssh/id_rsa.pub" }
+variable "aws_region" {
+  description = "AWS Region"
+  default     = "ap-south-1"
+}
+
+variable "instance_type" {
+  description = "EC2 Instance Size"
+  default     = "t2.micro"
+}
+
+variable "key_name" {
+  description = "Existing AWS Key Pair Name"
+}
+
+variable "project_name" {
+  description = "Project Name"
+  default     = "portfolio"
+}
