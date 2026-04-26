@@ -1,0 +1,47 @@
+name: Production Deploy Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t portfolio-app .
+
+      - name: Save Private Key
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+      - name: Copy Project Files to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i private_key.pem -r . \
+          ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/portfolio
+
+      - name: Deploy on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem \
+          ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+
+            cd ~/portfolio
+
+            docker stop portfolio-container || true
+            docker rm portfolio-container || true
+
+            docker build -t portfolio-app .
+
+            docker run -d \
+              --name portfolio-container \
+              -p 80:80 \
+              --restart always \
+              portfolio-app
+
+          EOF
