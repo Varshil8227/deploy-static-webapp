@@ -31,16 +31,17 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem \
           ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # Move into the specific code folder on the server
-            cd ~/portfolio/project-1/code
+            # 1. Find and enter the correct folder
+            # Note: We use -d to check if the directory exists first
+            cd ~/portfolio/project-1/code || cd ~/portfolio/*/project-1/code
 
-            docker stop portfolio-container || true
-            docker rm portfolio-container || true
+            # 2. Use sudo for docker if you haven't fixed permissions yet
+            sudo docker stop portfolio-container || true
+            sudo docker rm portfolio-container || true
 
-            # Build using the Dockerfile located in the current directory
-            docker build -t portfolio-app .
-
-            docker run -d \
+            # 3. Build and Run
+            sudo docker build -t portfolio-app .
+            sudo docker run -d \
               --name portfolio-container \
               -p 80:80 \
               --restart always \
