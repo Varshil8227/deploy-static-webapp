@@ -14,7 +14,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker Image
-        run: docker build -t portfolio-app .
+        # We tell GitHub to look inside project-1/code for the Dockerfile
+        run: docker build -t portfolio-app ./project-1/code
 
       - name: Save Private Key
         run: |
@@ -30,12 +31,13 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem \
           ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-
-            cd ~/portfolio
+            # Move into the specific code folder on the server
+            cd ~/portfolio/project-1/code
 
             docker stop portfolio-container || true
             docker rm portfolio-container || true
 
+            # Build using the Dockerfile located in the current directory
             docker build -t portfolio-app .
 
             docker run -d \
@@ -43,5 +45,4 @@ jobs:
               -p 80:80 \
               --restart always \
               portfolio-app
-
           EOF
