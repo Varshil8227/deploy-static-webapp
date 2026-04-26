@@ -14,8 +14,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker Image
-        # We tell GitHub to look inside project-1/code for the Dockerfile
-        run: docker build -t portfolio-app ./code
+        # Fixed path: Dockerfile is inside project-1/code/
+        run: docker build -t portfolio-app ./project-1/code
 
       - name: Save Private Key
         run: |
@@ -24,22 +24,25 @@ jobs:
 
       - name: Copy Project Files to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i private_key.pem -r . \
-          ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/portfolio
+          # Create the target directory first (avoids stale permission issues)
+          ssh -o StrictHostKeyChecking=no -i private_key.pem \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+            "rm -rf ~/portfolio && mkdir -p ~/portfolio"
+
+          # Copy ONLY project-1/code — skip .git entirely
+          scp -o StrictHostKeyChecking=no -i private_key.pem -r \
+            ./project-1/code \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/portfolio/
 
       - name: Deploy on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem \
           ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # 1. Find and enter the correct folder
-            # Note: We use -d to check if the directory exists first
-            cd ~/portfolio/project-1/code || cd ~/portfolio/*/project-1/code
+            cd ~/portfolio/code
 
-            # 2. Use sudo for docker if you haven't fixed permissions yet
             sudo docker stop portfolio-container || true
             sudo docker rm portfolio-container || true
 
-            # 3. Build and Run
             sudo docker build -t portfolio-app .
             sudo docker run -d \
               --name portfolio-container \
